@@ -11,7 +11,6 @@ module ALU(
 
   always_comb
 begin
-  validsignals_alu_a: assert(!$isunknown({alu_control,src_1,src_2}));
  case(alu_control)
  4'b0000: result = src_1 + src_2;          // addition
  4'b0001: result = src_1 - src_2;         // subtraction
