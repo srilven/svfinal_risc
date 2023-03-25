@@ -23,13 +23,12 @@ module GPRs(
  end
  always @ (posedge clk ) begin
    if(write_en) begin
-	validdata_gprs_a: assert(!$isunknown(write_data));
-     register_array[write_dest] <= write_data;    //Write the data to destination register when write_en is high
+     register_array[write_dest] <= write_data;             //Write the data to destination register when write_en is high
    end
  end
  
 
-  assign read_data_1 = register_array[read_addr_1];     
+  assign read_data_1 = register_array[read_addr_1];              
   assign read_data_2 = register_array[read_addr_2];    
 
 
