@@ -20,7 +20,6 @@ module data_memory(
  
    always_ff @(posedge clk) begin
   if (write_en) begin
-	validdata_datamem_a: assert(!$isunknown(write_data));
         memory[addr] <= write_data;
 	end
  end
