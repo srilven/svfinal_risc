@@ -1,19 +1,33 @@
 `include "parameters.sv"
 `timescale 1ns / 1ps
 
+package random_pkg;
 class random_instruction;
   rand logic [3:0] opcode;
   rand logic [2:0] src1;
   rand logic [2:0] src2;
   rand logic [2:0] dest1;
   rand logic [5:0] offset;
+  logic [`instruction_row - 1:0] instruct; 
   
   constraint opcode_c { opcode inside {[0:13]}; }
   constraint offset_c { offset inside {[0:1]};  }
   
+  function void post_randomize();                     //using post randomize
+    if(opcode inside {[2:10]})										//for alu operations
+          instruct = {opcode,dest1,src1,src2,offset[2:0]};
+        else if(opcode inside {0, 1, 11, 12})							//for mem and branch operation
+          instruct = {opcode,dest1,src1,offset};
+        else if(opcode == 13)											//for jump
+           instruct = {opcode,6'b000000,offset};
+        $display("time=%t, random opcode=%d, src1=%b, src2=%b, dest1=%d, offset=%b instruction=%b", $time, opcode, dest1, src1, src2, offset, instruct);
+  endfunction
+  
 endclass
+endpackage
 
 module top_risc_processor;
+import random_pkg::*;
 
  logic clk;
 
@@ -54,13 +68,7 @@ module top_risc_processor;
       rand_obj1 = new();
       for(int i=0; i<15; i++) begin												//as we have 15 instrcutions
         assert (rand_obj1.randomize());
-        if(rand_obj1.opcode inside {[2:10]})										//for alu operations
-          risc_processor_dut.DU.im.instruction_mem[i] = {rand_obj1.opcode,rand_obj1.dest1,rand_obj1.src1,rand_obj1.src2,rand_obj1.offset[2:0]};
-        else if(rand_obj1.opcode inside {0, 1, 11, 12})							//for mem and branch operation
-          risc_processor_dut.DU.im.instruction_mem[i] = {rand_obj1.opcode,rand_obj1.dest1,rand_obj1.src1,rand_obj1.offset};
-        else if(rand_obj1.opcode == 13)											//for jump
-          risc_processor_dut.DU.im.instruction_mem[i] = {rand_obj1.opcode,6'b000000,rand_obj1.offset};
-        $display("time=%t, i=%d, random opcode=%d, src1=%b, src2=%b, dest1=%d, offset=%b instruction=%b", $time, i, rand_obj1.opcode, rand_obj1.dest1, rand_obj1.src1, rand_obj1.src2, rand_obj1.offset, risc_processor_dut.DU.im.instruction_mem[i]);
+        risc_processor_dut.DU.im.instruction_mem[i] = rand_obj1.instruct;
       end
       `endif
     end
@@ -77,13 +85,13 @@ module top_risc_processor;
   
   task display_GPRs();
     $display("GPRs values are below");
-    for(int j=0; j < risc_processor_dut.DU.reg_file.register_array.size() ; j++)
+    for(int j=0; j < 8 ; j++)
       $display("Value of R%d is %d",j, risc_processor_dut.DU.reg_file.register_array[j]);
   endtask
   
   task display_data_memory();
     $display("Data Memory values are below");
-    for(int j=0; j < risc_processor_dut.DU.dm.memory.size() ; j++)
+    for(int j=0; j < 8 ; j++)
       $display("Value of R%d is %d",j, risc_processor_dut.DU.dm.memory[j]);
   endtask
   
